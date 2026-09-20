@@ -125,8 +125,19 @@ h1, h2, h3 {
   text-align: left; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 9px;
 }
 .card:active { transform: scale(0.98); }
-.card-icon { width: 100%; aspect-ratio: 1.4; border-radius: 4px; background: var(--accent-100); display: grid; place-items: center; border: 1px solid var(--line); }
+.card-icon {
+  position: relative; width: 100%; aspect-ratio: 1.4; border-radius: 4px;
+  background: var(--accent-100); display: grid; place-items: center; border: 1px solid var(--line);
+}
 .card-icon svg { width: 44px; height: 44px; }
+.card-qty-badge {
+  position: absolute; top: 6px; right: 6px;
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
+  background: var(--accent-700); color: var(--paper); border: 1px solid var(--paper);
+  font-family: 'Domine', Georgia, serif; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px hsl(var(--shadow) / 0.35);
+}
 .card-name { font-family: 'Domine', Georgia, serif; font-size: 14px; font-weight: 600; line-height: 1.28; min-height: 36px; }
 .card-foot { display: flex; align-items: baseline; justify-content: space-between; width: 100%; }
 .card-price {

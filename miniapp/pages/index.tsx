@@ -383,9 +383,15 @@ export default function Home() {
             {activeCategory && activeCategory.items.length > 0 ? (
               activeCategory.items.map((item) => {
                 const Icon = ICONS[activeCategory.icon] ?? IconCupHot;
+                const qtyInCart = cart
+                  .filter((c) => c.item.id === item.id)
+                  .reduce((s, c) => s + c.qty, 0);
                 return (
                   <button key={item.id} className="card" onClick={() => openProductSheet(item)}>
-                    <div className="card-icon"><Icon /></div>
+                    <div className="card-icon">
+                      <Icon />
+                      {qtyInCart > 0 && <span className="card-qty-badge">{qtyInCart}</span>}
+                    </div>
                     <div className="card-name">{localized(item, lang)}</div>
                     <div className="card-foot">
                       <span className="card-price tabular">{fmt(item.basePrice, lang)}</span>
