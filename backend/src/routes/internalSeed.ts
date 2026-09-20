@@ -81,7 +81,7 @@ const branches = [
   },
 ];
 
-internalSeedRouter.post("/", async (req, res) => {
+async function runSeed(req: any, res: any) {
   if (req.query.key !== process.env.SEED_SECRET) {
     return res.status(403).json({ error: "forbidden" });
   }
@@ -122,4 +122,7 @@ internalSeedRouter.post("/", async (req, res) => {
   }
 
   res.json({ status: "seeded" });
-});
+}
+
+internalSeedRouter.post("/", runSeed);
+internalSeedRouter.get("/", runSeed);
