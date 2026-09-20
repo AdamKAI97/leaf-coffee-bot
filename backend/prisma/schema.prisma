@@ -178,6 +178,8 @@ model Order {
   paymentMethod   PaymentMethod
   paymentStatus   PaymentStatus @default(PENDING)
   deliveryAddress String?
+  deliveryLatitude  Float?
+  deliveryLongitude Float?
   scheduledFor    DateTime?     // null = "as soon as possible"
   totalPrice      Int
   language        Language

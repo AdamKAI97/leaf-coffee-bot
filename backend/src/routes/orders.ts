@@ -19,6 +19,8 @@ ordersRouter.post("/", async (req, res) => {
     branchId,
     orderType,
     deliveryAddress,
+    deliveryLatitude,
+    deliveryLongitude,
     telegramId,
     telegramUsername,
     telegramFirstName,
@@ -28,6 +30,8 @@ ordersRouter.post("/", async (req, res) => {
     branchId: number;
     orderType: "PICKUP" | "DELIVERY";
     deliveryAddress?: string;
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
     telegramId: number;
     telegramUsername?: string;
     telegramFirstName?: string;
@@ -92,6 +96,8 @@ ordersRouter.post("/", async (req, res) => {
       type: orderType,
       paymentMethod: "CASH",
       deliveryAddress: orderType === "DELIVERY" ? deliveryAddress?.trim() : null,
+      deliveryLatitude: orderType === "DELIVERY" ? deliveryLatitude ?? null : null,
+      deliveryLongitude: orderType === "DELIVERY" ? deliveryLongitude ?? null : null,
       totalPrice: total,
       language,
       items: { create: orderItemsData },
@@ -110,8 +116,12 @@ ordersRouter.post("/", async (req, res) => {
         return `• ${oi.menuItem.nameRu}${variants ? ` (${variants})` : ""} x${oi.quantity} — ${oi.unitPrice * oi.quantity} сум`;
       })
       .join("\n");
+    const mapLink =
+      deliveryLatitude && deliveryLongitude
+        ? `\nКарта: https://maps.google.com/?q=${deliveryLatitude},${deliveryLongitude}`
+        : "";
     const typeText =
-      orderType === "PICKUP" ? "Самовывоз" : `Доставка: ${order.deliveryAddress}`;
+      orderType === "PICKUP" ? "Самовывоз" : `Доставка: ${order.deliveryAddress}${mapLink}`;
 
     await bot.telegram.sendMessage(
       staffChatId,

@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
+
+const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false });
+
+// Kokand, Uzbekistan — sensible default map center before geolocation resolves.
+const DEFAULT_MAP_CENTER = { lat: 40.5283, lng: 70.9425 };
 
 type Lang = "ru" | "uz" | "en";
 
@@ -93,6 +99,7 @@ const UI: Record<Lang, Record<string, string>> = {
     orderError: "Не получилось оформить заказ, попробуйте ещё раз",
     placingOrder: "Оформляем...",
     paymentNote: "Оплата: наличными при получении",
+    pickOnMap: "📍 Указать на карте",
   },
   uz: {
     demoBanner: "Demo menyu. Haqiqiy taomlar admin panel orqali qo'shiladi.",
@@ -124,6 +131,7 @@ const UI: Record<Lang, Record<string, string>> = {
     orderError: "Buyurtma berilmadi, qayta urinib ko'ring",
     placingOrder: "Rasmiylashtirilmoqda...",
     paymentNote: "To'lov: yetkazib berishda naqd pul bilan",
+    pickOnMap: "📍 Xaritada belgilash",
   },
   en: {
     demoBanner: "Sample menu. Real items will be added via the admin panel.",
@@ -155,6 +163,7 @@ const UI: Record<Lang, Record<string, string>> = {
     orderError: "Couldn't place the order, please try again",
     placingOrder: "Placing order...",
     paymentNote: "Payment: cash on delivery",
+    pickOnMap: "📍 Pick on map",
   },
 };
 
@@ -258,6 +267,8 @@ export default function Home() {
   const [showLangList, setShowLangList] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [lastOrderId, setLastOrderId] = useState<number | null>(null);
   const [checkoutError, setCheckoutError] = useState("");
@@ -384,6 +395,8 @@ export default function Home() {
           branchId,
           orderType: orderType.toUpperCase(),
           deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          deliveryLatitude: orderType === "delivery" ? deliveryCoords?.lat : undefined,
+          deliveryLongitude: orderType === "delivery" ? deliveryCoords?.lng : undefined,
           telegramId: user?.id,
           telegramUsername: user?.username,
           telegramFirstName: user?.first_name,
@@ -400,6 +413,8 @@ export default function Home() {
       setLastOrderId(data.orderId);
       setCheckoutStatus("success");
       setCart([]);
+      setDeliveryAddress("");
+      setDeliveryCoords(null);
     } catch {
       setCheckoutStatus("error");
     }
@@ -463,13 +478,17 @@ export default function Home() {
       {orderType === "pickup" ? (
         <div className="order-hint">{t("pickupHint")}</div>
       ) : (
-        <input
-          className="table-input"
-          style={{ marginBottom: 14 }}
-          value={deliveryAddress}
-          onChange={(e) => setDeliveryAddress(e.target.value)}
-          placeholder={t("deliveryAddressPlaceholder")}
-        />
+        <div style={{ marginBottom: 14 }}>
+          <input
+            className="table-input"
+            value={deliveryAddress}
+            onChange={(e) => setDeliveryAddress(e.target.value)}
+            placeholder={t("deliveryAddressPlaceholder")}
+          />
+          <button className="map-locate-btn" style={{ marginTop: 8 }} onClick={() => setMapOpen(true)}>
+            {t("pickOnMap")}
+          </button>
+        </div>
       )}
 
       {loading ? (
@@ -524,6 +543,27 @@ export default function Home() {
             </button>
             <button className="cartbar-btn" onClick={() => { setCheckoutStatus("idle"); setCheckoutError(""); setCartOpen(true); }}>{t("checkout")}</button>
           </div>
+        )}
+      </div>
+
+      {/* Map picker sheet */}
+      <div className={`scrim ${mapOpen ? "open" : ""}`} onClick={() => setMapOpen(false)} />
+      <div className={`sheet ${mapOpen ? "open" : ""}`}>
+        {mapOpen && (
+          <>
+            <div className="sheet-handle" />
+            <div className="sheet-title" style={{ marginBottom: 4 }}>{t("pickOnMap")}</div>
+            <MapPicker
+              lang={lang}
+              initialLat={deliveryCoords?.lat ?? DEFAULT_MAP_CENTER.lat}
+              initialLng={deliveryCoords?.lng ?? DEFAULT_MAP_CENTER.lng}
+              onConfirm={(lat, lng, addr) => {
+                setDeliveryCoords({ lat, lng });
+                setDeliveryAddress(addr);
+                setMapOpen(false);
+              }}
+            />
+          </>
         )}
       </div>
 
