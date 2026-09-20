@@ -26,6 +26,9 @@ type MenuItem = {
   nameRu: string;
   nameUz: string;
   nameEn: string;
+  descriptionRu: string | null;
+  descriptionUz: string | null;
+  descriptionEn: string | null;
   basePrice: number;
   imageUrl: string | null;
   variantGroups: { variantGroup: VariantGroup }[];
@@ -153,6 +156,12 @@ function branchShortName(branch: Branch, lang: Lang) {
   return dashIndex === -1 ? full : full.slice(dashIndex + 1).trim();
 }
 
+function itemDescription(item: MenuItem, lang: Lang) {
+  if (lang === "ru") return item.descriptionRu;
+  if (lang === "uz") return item.descriptionUz;
+  return item.descriptionEn;
+}
+
 function IconCupHot() {
   return (
     <svg viewBox="0 0 64 64" fill="none">
@@ -179,7 +188,14 @@ function IconCake() {
     </svg>
   );
 }
-const ICONS: Record<string, () => JSX.Element> = { cupHot: IconCupHot, cupCold: IconCupCold, cake: IconCake };
+function IconPastry() {
+  return (
+    <svg viewBox="0 0 64 64" fill="none">
+      <path d="M8 30c6-10 16-16 24-16s18 6 24 16c-6 2-9 7-12 7-3 0-4-4-8-4s-5 5-8 5-5-5-8-5-6 4-9 4-6-4-3-7Z" fill="var(--accent-400)" stroke="var(--ink)" strokeWidth="3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+const ICONS: Record<string, () => JSX.Element> = { cupHot: IconCupHot, cupCold: IconCupCold, cake: IconCake, pastry: IconPastry };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -415,6 +431,10 @@ export default function Home() {
                 <div className="sheet-base-price tabular">{fmt(sheetItem.basePrice, lang)}</div>
               </div>
             </div>
+
+            {itemDescription(sheetItem, lang) && (
+              <p className="sheet-description">{itemDescription(sheetItem, lang)}</p>
+            )}
 
             {sheetItem.variantGroups.map(({ variantGroup }) => (
               <div className="variant-group" key={variantGroup.id}>

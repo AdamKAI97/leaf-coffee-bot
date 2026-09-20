@@ -86,21 +86,83 @@ const categories = [
   { key: "cold", ru: "Холодные напитки", uz: "Sovuq ichimliklar", en: "Cold drinks", sortOrder: 2, icon: "cupCold" },
   { key: "tea", ru: "Чай", uz: "Choy", en: "Tea", sortOrder: 3, icon: "cupHot" },
   { key: "dessert", ru: "Десерты", uz: "Desertlar", en: "Desserts", sortOrder: 4, icon: "cake" },
+  { key: "bakery", ru: "Выпечка и сэндвичи", uz: "Non mahsulotlari va sendvichlar", en: "Bakery & sandwiches", sortOrder: 5, icon: "pastry" },
 ];
 
 const items = [
-  { cat: "coffee", ru: "Капучино", uz: "Kapuchino", en: "Cappuccino", price: 25000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
-  { cat: "coffee", ru: "Латте", uz: "Latte", en: "Latte", price: 27000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
-  { cat: "coffee", ru: "Американо", uz: "Amerikano", en: "Americano", price: 20000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
-  { cat: "coffee", ru: "Раф", uz: "Raf", en: "Raf", price: 32000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
-  { cat: "coffee", ru: "Флэт Уайт", uz: "Flet Vayt", en: "Flat White", price: 28000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
-  { cat: "coffee", ru: "Эспрессо", uz: "Espresso", en: "Espresso", price: 16000, variants: ["SIZE", "DECAF"] },
-  { cat: "cold", ru: "Айс Латте", uz: "Ays Latte", en: "Iced Latte", price: 29000, variants: ["SIZE", "DECAF", "SUGAR"] },
-  { cat: "cold", ru: "Лимонад Leaf", uz: "Leaf Limonadi", en: "Leaf Lemonade", price: 24000, variants: ["SIZE", "SUGAR"] },
-  { cat: "tea", ru: "Чёрный чай", uz: "Qora choy", en: "Black Tea", price: 15000, variants: ["SIZE", "TEMPERATURE", "SUGAR"] },
-  { cat: "tea", ru: "Зелёный чай", uz: "Yashil choy", en: "Green Tea", price: 15000, variants: ["SIZE", "TEMPERATURE", "SUGAR"] },
-  { cat: "dessert", ru: "Круассан", uz: "Kruassan", en: "Croissant", price: 18000, variants: [] },
-  { cat: "dessert", ru: "Чизкейк", uz: "Chizkeyk", en: "Cheesecake", price: 32000, variants: [] },
+  // Кофе
+  { cat: "coffee", ru: "Эспрессо", uz: "Espresso", en: "Espresso", price: 16000, variants: ["SIZE", "DECAF"],
+    descRu: "Насыщенный концентрированный кофе на одну порцию.", descUz: "Bir porsiyalik quyuq va konsentrlangan qahva.", descEn: "A concentrated single shot of coffee." },
+  { cat: "coffee", ru: "Американо", uz: "Amerikano", en: "Americano", price: 20000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Эспрессо, разбавленный горячей водой.", descUz: "Issiq suv bilan suyultirilgan espresso.", descEn: "Espresso diluted with hot water." },
+  { cat: "coffee", ru: "Капучино", uz: "Kapuchino", en: "Cappuccino", price: 25000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Эспрессо с молоком и плотной молочной пенкой.", descUz: "Sut va zich sut ko'pigi bilan espresso.", descEn: "Espresso with milk and a thick layer of foam." },
+  { cat: "coffee", ru: "Латте", uz: "Latte", en: "Latte", price: 27000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Мягкий кофе с большим количеством молока.", descUz: "Ko'p sut bilan yumshoq qahva.", descEn: "A mild coffee with plenty of steamed milk." },
+  { cat: "coffee", ru: "Флэт Уайт", uz: "Flet Vayt", en: "Flat White", price: 28000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Двойной эспрессо с бархатистой молочной микропенкой.", descUz: "Ikkilangan espresso va baxmal sut ko'pigi.", descEn: "Double espresso with velvety micro-foam milk." },
+  { cat: "coffee", ru: "Раф", uz: "Raf", en: "Raf", price: 32000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Кофе со сливками и ванильным сахаром, взбитый до пенки.", descUz: "Qaymoq va vanilli shakar bilan ko'pirtirilgan qahva.", descEn: "Coffee whipped with cream and vanilla sugar." },
+  { cat: "coffee", ru: "Мокка", uz: "Mokka", en: "Mocha", price: 30000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Кофе с шоколадом и молоком.", descUz: "Shokolad va sut bilan qahva.", descEn: "Coffee with chocolate and milk." },
+  { cat: "coffee", ru: "Карамельный латте", uz: "Karamelli latte", en: "Caramel Latte", price: 29000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Латте с карамельным сиропом.", descUz: "Karamel siropli latte.", descEn: "Latte with caramel syrup." },
+  { cat: "coffee", ru: "Ванильный капучино", uz: "Vanilli kapuchino", en: "Vanilla Cappuccino", price: 27000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"],
+    descRu: "Капучино с ванильным сиропом.", descUz: "Vanil siropli kapuchino.", descEn: "Cappuccino with vanilla syrup." },
+  { cat: "coffee", ru: "Кофе по-турецки", uz: "Turk qahvasi", en: "Turkish Coffee", price: 22000, variants: ["DECAF", "SUGAR"],
+    descRu: "Кофе, сваренный в турке, подаётся с гущей.", descUz: "Jazvada qaynatilgan, cho'kindisi bilan tortiladi.", descEn: "Coffee brewed in a cezve, served unfiltered." },
+
+  // Холодные напитки
+  { cat: "cold", ru: "Айс Латте", uz: "Ays Latte", en: "Iced Latte", price: 29000, variants: ["SIZE", "DECAF", "SUGAR"],
+    descRu: "Латте со льдом.", descUz: "Muzli latte.", descEn: "Latte served over ice." },
+  { cat: "cold", ru: "Айс Американо", uz: "Ays Amerikano", en: "Iced Americano", price: 22000, variants: ["SIZE", "DECAF", "SUGAR"],
+    descRu: "Американо со льдом.", descUz: "Muzli amerikano.", descEn: "Americano served over ice." },
+  { cat: "cold", ru: "Фраппе", uz: "Frappe", en: "Frappe", price: 30000, variants: ["SIZE", "DECAF", "SUGAR"],
+    descRu: "Взбитый холодный кофе с пенкой.", descUz: "Ko'pikli sovuq qahva.", descEn: "Whipped iced coffee with foam." },
+  { cat: "cold", ru: "Лимонад Leaf", uz: "Leaf Limonadi", en: "Leaf Lemonade", price: 24000, variants: ["SIZE", "SUGAR"],
+    descRu: "Цитрусовый лимонад с мятой.", descUz: "Yalpiz bilan sitrus limonadi.", descEn: "Citrus lemonade with mint." },
+  { cat: "cold", ru: "Ягодный лимонад", uz: "Rezavorli limonad", en: "Berry Lemonade", price: 26000, variants: ["SIZE", "SUGAR"],
+    descRu: "Лимонад на основе сезонных ягод.", descUz: "Mavsumiy rezavorlardan tayyorlangan limonad.", descEn: "Lemonade made with seasonal berries." },
+  { cat: "cold", ru: "Холодный чай с персиком", uz: "Muzli choy (shaftoli)", en: "Iced Tea (Peach)", price: 22000, variants: ["SIZE", "SUGAR"],
+    descRu: "Освежающий чай со льдом и вкусом персика.", descUz: "Shaftoli ta'mli, muzli va yayratuvchi choy.", descEn: "Refreshing iced tea with peach flavor." },
+
+  // Чай
+  { cat: "tea", ru: "Чёрный чай", uz: "Qora choy", en: "Black Tea", price: 15000, variants: ["SIZE", "TEMPERATURE", "SUGAR"],
+    descRu: "Классический чёрный чай.", descUz: "Klassik qora choy.", descEn: "Classic black tea." },
+  { cat: "tea", ru: "Зелёный чай", uz: "Yashil choy", en: "Green Tea", price: 15000, variants: ["SIZE", "TEMPERATURE", "SUGAR"],
+    descRu: "Классический зелёный чай.", descUz: "Klassik yashil choy.", descEn: "Classic green tea." },
+  { cat: "tea", ru: "Чай с мятой", uz: "Yalpiz choy", en: "Mint Tea", price: 17000, variants: ["SIZE", "TEMPERATURE", "SUGAR"],
+    descRu: "Чёрный чай со свежей мятой.", descUz: "Yangi yalpiz bilan qora choy.", descEn: "Black tea with fresh mint." },
+  { cat: "tea", ru: "Чай каркаде", uz: "Karkade choy", en: "Hibiscus Tea", price: 17000, variants: ["SIZE", "TEMPERATURE", "SUGAR"],
+    descRu: "Кисловатый чай насыщенного красного цвета.", descUz: "Nordon ta'mli, to'q qizil rangli choy.", descEn: "Tart, deep-red hibiscus tea." },
+  { cat: "tea", ru: "Имбирный чай с лимоном", uz: "Zanjabil-limon choy", en: "Ginger Lemon Tea", price: 18000, variants: ["SIZE", "TEMPERATURE", "SUGAR"],
+    descRu: "Согревающий чай с имбирём и лимоном.", descUz: "Zanjabil va limon bilan isituvchi choy.", descEn: "Warming tea with ginger and lemon." },
+
+  // Десерты
+  { cat: "dessert", ru: "Чизкейк Нью-Йорк", uz: "Nyu-York chizkeyki", en: "New York Cheesecake", price: 32000, variants: [],
+    descRu: "Классический сливочный чизкейк.", descUz: "Klassik kremli chizkeyk.", descEn: "Classic creamy New York-style cheesecake." },
+  { cat: "dessert", ru: "Тирамису", uz: "Tiramisu", en: "Tiramisu", price: 30000, variants: [],
+    descRu: "Итальянский десерт с маскарпоне и кофе.", descUz: "Maskarpone va qahva bilan italyan deserti.", descEn: "Italian dessert with mascarpone and coffee." },
+  { cat: "dessert", ru: "Морковный торт", uz: "Sabzili keks", en: "Carrot Cake", price: 28000, variants: [],
+    descRu: "Влажный бисквит с морковью и кремом.", descUz: "Sabzi va krem bilan nam biskvit.", descEn: "Moist carrot sponge cake with cream frosting." },
+  { cat: "dessert", ru: "Брауни", uz: "Brauni", en: "Brownie", price: 24000, variants: [],
+    descRu: "Плотный шоколадный бисквит.", descUz: "Zich shokoladli biskvit.", descEn: "Dense chocolate brownie." },
+  { cat: "dessert", ru: "Синнабон", uz: "Sinnabon", en: "Cinnamon Roll", price: 22000, variants: [],
+    descRu: "Булочка с корицей и сливочной глазурью.", descUz: "Dolchin va kremli glazur bilan bulochka.", descEn: "Cinnamon roll with cream cheese icing." },
+
+  // Выпечка и сэндвичи
+  { cat: "bakery", ru: "Круассан классический", uz: "Klassik kruassan", en: "Classic Croissant", price: 18000, variants: [],
+    descRu: "Слоёный масляный круассан.", descUz: "Qatlamli sariyog'li kruassan.", descEn: "Flaky butter croissant." },
+  { cat: "bakery", ru: "Шоколадный круассан", uz: "Shokoladli kruassan", en: "Chocolate Croissant", price: 20000, variants: [],
+    descRu: "Круассан с шоколадной начинкой.", descUz: "Shokolad ichlikli kruassan.", descEn: "Croissant filled with chocolate." },
+  { cat: "bakery", ru: "Круассан с ветчиной и сыром", uz: "Vetchina-pishloqli kruassan", en: "Ham & Cheese Croissant", price: 27000, variants: [],
+    descRu: "Несладкий круассан с ветчиной и сыром.", descUz: "Vetchina va pishloq bilan shirin bo'lmagan kruassan.", descEn: "Savory croissant with ham and cheese." },
+  { cat: "bakery", ru: "Сэндвич с курицей", uz: "Tovuqli sendvich", en: "Chicken Sandwich", price: 28000, variants: [],
+    descRu: "Сэндвич с куриным филе и овощами.", descUz: "Tovuq filesi va sabzavotlar bilan sendvich.", descEn: "Sandwich with chicken fillet and vegetables." },
+  { cat: "bakery", ru: "Сэндвич Капрезе", uz: "Kaprese sendvich", en: "Caprese Sandwich", price: 26000, variants: [],
+    descRu: "Сэндвич с моцареллой, томатами и песто.", descUz: "Motsarella, pomidor va pesto bilan sendvich.", descEn: "Sandwich with mozzarella, tomato and pesto." },
+  { cat: "bakery", ru: "Мини-кексы ассорти", uz: "Mini keks assorti", en: "Mini Muffin Assortment", price: 20000, variants: [],
+    descRu: "Набор из трёх мини-кексов на выбор.", descUz: "Uchta mini keksdan iborat to'plam.", descEn: "A set of three assorted mini muffins." },
 ];
 
 async function runSeed(req: any, res: any) {
@@ -167,7 +229,15 @@ async function runSeed(req: any, res: any) {
     const menuItem = existing
       ? await prisma.menuItem.update({
           where: { id: existing.id },
-          data: { nameRu: item.ru, nameUz: item.uz, nameEn: item.en, basePrice: item.price },
+          data: {
+            nameRu: item.ru,
+            nameUz: item.uz,
+            nameEn: item.en,
+            basePrice: item.price,
+            descriptionRu: item.descRu,
+            descriptionUz: item.descUz,
+            descriptionEn: item.descEn,
+          },
         })
       : await prisma.menuItem.create({
           data: {
@@ -176,6 +246,9 @@ async function runSeed(req: any, res: any) {
             nameUz: item.uz,
             nameEn: item.en,
             basePrice: item.price,
+            descriptionRu: item.descRu,
+            descriptionUz: item.descUz,
+            descriptionEn: item.descEn,
           },
         });
 
