@@ -106,7 +106,7 @@ bot.on("text", async (ctx, next) => {
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch || !tableNumber) return;
 
-  await prisma.tableCall.create({
+  const tableCall = await prisma.tableCall.create({
     data: { branchId, customerId: customer.id, tableNumber },
   });
 
@@ -117,9 +117,39 @@ bot.on("text", async (ctx, next) => {
     const who = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
     await bot.telegram.sendMessage(
       staffChatId,
-      `🔔 Вызов официанта\nФилиал: ${branch.nameRu}\nСтолик: ${tableNumber}\nГость: ${who}`
+      `🔔 Вызов официанта\nФилиал: ${branch.nameRu}\nСтолик: ${tableNumber}\nГость: ${who}`,
+      Markup.inlineKeyboard([Markup.button.callback("✅ Принять", `ack:${tableCall.id}`)])
     );
   } else {
     console.warn("TELEGRAM_ORDERS_CHAT_ID not set, table call not forwarded to staff");
   }
+});
+
+bot.action(/ack:(\d+)/, async (ctx) => {
+  const tableCallId = Number(ctx.match[1]);
+  const tableCall = await prisma.tableCall.findUnique({
+    where: { id: tableCallId },
+    include: { customer: true },
+  });
+
+  if (!tableCall) return ctx.answerCbQuery();
+  if (tableCall.status === "ACKNOWLEDGED") {
+    return ctx.answerCbQuery("Уже принято", { show_alert: false });
+  }
+
+  await prisma.tableCall.update({
+    where: { id: tableCallId },
+    data: { status: "ACKNOWLEDGED" },
+  });
+
+  const staffName = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+  await ctx.answerCbQuery("Принято");
+  await ctx.editMessageText(
+    `${(ctx.callbackQuery.message as any).text}\n\n✅ Принято: ${staffName}`
+  );
+
+  await bot.telegram.sendMessage(
+    tableCall.customer.telegramId.toString(),
+    t(tableCall.customer.language, "tableCallAcknowledged", { table: tableCall.tableNumber })
+  );
 });
