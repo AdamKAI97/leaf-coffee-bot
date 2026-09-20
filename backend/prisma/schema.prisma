@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Language {
+  RU
+  UZ
+  EN
+}
+
+enum OrderType {
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  PAYME
+  CLICK
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum OrderStatus {
+  CREATED
+  ACCEPTING
+  ACCEPTED
+  PREPARING
+  READY
+  SENT
+  CANCELLED
+}
+
+enum VariantGroupKey {
+  SIZE
+  TEMPERATURE
+  DECAF
+  SUGAR
+}
+
+enum LoyaltyTransactionType {
+  EARNED
+  SPENT
+  ADJUSTED
+}
+
+enum PromotionType {
+  DISCOUNT
+  PROMO_CODE
+  GIVEAWAY
+}
+
+model Branch {
+  id           Int      @id @default(autoincrement())
+  nameRu       String
+  nameUz       String
+  nameEn       String
+  addressRu    String
+  addressUz    String
+  addressEn    String
+  latitude     Float?
+  longitude    Float?
+  opensAt      String   // "08:00"
+  closesAt     String   // "22:00"
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  orders       Order[]
+}
+
+model Customer {
+  id                  Int                  @id @default(autoincrement())
+  telegramId          BigInt               @unique
+  language            Language             @default(RU)
+  phone               String?
+  loyaltyPoints       Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  orders              Order[]
+  loyaltyTransactions LoyaltyTransaction[]
+}
+
+model MenuCategory {
+  id        Int        @id @default(autoincrement())
+  nameRu    String
+  nameUz    String
+  nameEn    String
+  sortOrder Int        @default(0)
+  isActive  Boolean    @default(true)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id                Int                     @id @default(autoincrement())
+  categoryId        Int
+  category          MenuCategory            @relation(fields: [categoryId], references: [id])
+  nameRu            String
+  nameUz            String
+  nameEn            String
+  descriptionRu     String?
+  descriptionUz     String?
+  descriptionEn     String?
+  basePrice         Int                     // in tiyin/kopecks (smallest currency unit)
+  imageUrl          String?
+  isActive          Boolean                 @default(true)
+  variantGroups     MenuItemVariantGroup[]
+  orderItems        OrderItem[]
+}
+
+// Which variant groups (size/temperature/decaf/sugar) apply to a given menu item
+model MenuItemVariantGroup {
+  id             Int             @id @default(autoincrement())
+  menuItemId     Int
+  menuItem       MenuItem        @relation(fields: [menuItemId], references: [id])
+  variantGroupId Int
+  variantGroup   VariantGroup    @relation(fields: [variantGroupId], references: [id])
+  isRequired     Boolean         @default(true)
+
+  @@unique([menuItemId, variantGroupId])
+}
+
+model VariantGroup {
+  id        Int                     @id @default(autoincrement())
+  key       VariantGroupKey         @unique
+  nameRu    String
+  nameUz    String
+  nameEn    String
+  options   VariantOption[]
+  menuItems MenuItemVariantGroup[]
+}
+
+model VariantOption {
+  id             Int          @id @default(autoincrement())
+  variantGroupId Int
+  variantGroup   VariantGroup @relation(fields: [variantGroupId], references: [id])
+  nameRu         String
+  nameUz         String
+  nameEn         String
+  priceDelta     Int          @default(0)
+  sortOrder      Int          @default(0)
+  orderItemVariants OrderItemVariant[]
+}
+
+model Order {
+  id              Int           @id @default(autoincrement())
+  customerId      Int
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  branchId        Int
+  branch          Branch        @relation(fields: [branchId], references: [id])
+  type            OrderType
+  status          OrderStatus   @default(CREATED)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  deliveryAddress String?
+  scheduledFor    DateTime?     // null = "as soon as possible"
+  totalPrice      Int
+  language        Language
+  createdAt       DateTime      @default(now())
+  items           OrderItem[]
+  statusLog       OrderStatusLog[]
+  loyaltyTransactions LoyaltyTransaction[]
+}
+
+model OrderItem {
+  id         Int                @id @default(autoincrement())
+  orderId    Int
+  order      Order              @relation(fields: [orderId], references: [id])
+  menuItemId Int
+  menuItem   MenuItem           @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  unitPrice  Int
+  variants   OrderItemVariant[]
+}
+
+model OrderItemVariant {
+  id              Int           @id @default(autoincrement())
+  orderItemId     Int
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id])
+  variantOptionId Int
+  variantOption   VariantOption @relation(fields: [variantOptionId], references: [id])
+}
+
+model OrderStatusLog {
+  id        Int         @id @default(autoincrement())
+  orderId   Int
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  changedAt DateTime    @default(now())
+}
+
+model Promotion {
+  id              Int           @id @default(autoincrement())
+  type            PromotionType
+  nameRu          String
+  nameUz          String
+  nameEn          String
+  descriptionRu   String?
+  descriptionUz   String?
+  descriptionEn   String?
+  code            String?       @unique
+  discountPercent Int?
+  discountAmount  Int?
+  startsAt        DateTime
+  endsAt          DateTime
+  isActive        Boolean       @default(true)
+}
+
+model LoyaltyTransaction {
+  id         Int                    @id @default(autoincrement())
+  customerId Int
+  customer   Customer               @relation(fields: [customerId], references: [id])
+  orderId    Int?
+  order      Order?                 @relation(fields: [orderId], references: [id])
+  points     Int
+  type       LoyaltyTransactionType
+  createdAt  DateTime               @default(now())
+}
