@@ -50,9 +50,9 @@ const variantGroups = [
 
 const branches = [
   {
-    nameRu: "Leaf Coffee",
-    nameUz: "Leaf Coffee",
-    nameEn: "Leaf Coffee",
+    nameRu: "Leaf Coffee — ЧПК",
+    nameUz: "Leaf Coffee — ChPK",
+    nameEn: "Leaf Coffee — ChPK",
     addressRu: "Ферганская область, Коканд, улица Шохрухобод (автобусная остановка)",
     addressUz: "Farg'ona viloyati, Qo'qon, Shohruhobod ko'chasi (avtobus bekati)",
     addressEn: "Fergana region, Kokand, Shokhrukhobod street (bus stop)",
@@ -60,9 +60,9 @@ const branches = [
     closesAt: "23:59",
   },
   {
-    nameRu: "Leaf Coffee",
-    nameUz: "Leaf Coffee",
-    nameEn: "Leaf Coffee",
+    nameRu: "Leaf Coffee — 18 мактаб",
+    nameUz: "Leaf Coffee — 18-maktab",
+    nameEn: "Leaf Coffee — School 18",
     addressRu: "Ферганская область, Коканд, улица Убая Орипова, 20",
     addressUz: "Farg'ona viloyati, Qo'qon, Ubay Oripov ko'chasi, 20",
     addressEn: "Fergana region, Kokand, Ubay Oripov street, 20",
@@ -70,9 +70,9 @@ const branches = [
     closesAt: "23:59",
   },
   {
-    nameRu: "Leaf Coffee",
-    nameUz: "Leaf Coffee",
-    nameEn: "Leaf Coffee",
+    nameRu: "Leaf Coffee — Город",
+    nameUz: "Leaf Coffee — Shahar",
+    nameEn: "Leaf Coffee — Downtown",
     addressRu: "Ферганская область, Коканд, улица Турон, 7",
     addressUz: "Farg'ona viloyati, Qo'qon, Turon ko'chasi, 7",
     addressEn: "Fergana region, Kokand, Turon street, 7",
