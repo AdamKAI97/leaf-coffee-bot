@@ -91,9 +91,13 @@ bot.action(/bell:(\d+)/, async (ctx) => {
   await ctx.reply(t(lang, "askTableNumber"));
 });
 
-bot.on("text", async (ctx) => {
+bot.command("chatid", async (ctx) => {
+  await ctx.reply(`Chat ID: ${ctx.chat.id}`);
+});
+
+bot.on("text", async (ctx, next) => {
   const branchId = pendingTableCall.get(ctx.from.id);
-  if (branchId === undefined) return;
+  if (branchId === undefined) return next();
   pendingTableCall.delete(ctx.from.id);
 
   const tableNumber = ctx.message.text.trim().slice(0, 20);
@@ -118,8 +122,4 @@ bot.on("text", async (ctx) => {
   } else {
     console.warn("TELEGRAM_ORDERS_CHAT_ID not set, table call not forwarded to staff");
   }
-});
-
-bot.command("chatid", async (ctx) => {
-  await ctx.reply(`Chat ID: ${ctx.chat.id}`);
 });
