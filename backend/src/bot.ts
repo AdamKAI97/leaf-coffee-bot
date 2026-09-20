@@ -73,10 +73,15 @@ bot.action(/branch:(\d+)/, async (ctx) => {
 
   await ctx.answerCbQuery();
   await ctx.reply(t(lang, "branchSelected", { branch: branchName(branch, lang) }));
-  await ctx.reply(
-    t(lang, "menuComingSoon"),
-    Markup.inlineKeyboard([Markup.button.callback(t(lang, "callWaiter"), `bell:${branchId}`)])
-  );
+
+  const miniAppUrl = process.env.MINIAPP_URL;
+  const buttons = [
+    ...(miniAppUrl
+      ? [Markup.button.webApp(t(lang, "openMenu"), `${miniAppUrl}?branch=${branchId}`)]
+      : []),
+    Markup.button.callback(t(lang, "callWaiter"), `bell:${branchId}`),
+  ];
+  await ctx.reply(t(lang, "menuComingSoon"), Markup.inlineKeyboard(buttons, { columns: 1 }));
 });
 
 bot.action(/bell:(\d+)/, async (ctx) => {
