@@ -34,7 +34,7 @@ tableCallsRouter.post("/", async (req, res) => {
     await bot.telegram.sendMessage(
       staffChatId,
       `🔔 Вызов официанта (из Mini App)\nФилиал: ${branch.nameRu}\nСтолик: ${tableCall.tableNumber}\nГость: ${who}`,
-      Markup.inlineKeyboard([Markup.button.callback("✅ Принять", `ack:${tableCall.id}`)])
+      Markup.inlineKeyboard([Markup.button.callback("✅ Принять", `tableack:${tableCall.id}`)])
     );
   }
 

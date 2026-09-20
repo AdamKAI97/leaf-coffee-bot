@@ -49,7 +49,7 @@ bot.start(async (ctx) => {
   );
 });
 
-bot.action(/lang:(RU|UZ|EN)/, async (ctx) => {
+bot.action(/^lang:(RU|UZ|EN)$/, async (ctx) => {
   const lang = ctx.match[1] as Language;
   await prisma.customer.update({
     where: { telegramId: BigInt(ctx.from.id) },
@@ -60,7 +60,7 @@ bot.action(/lang:(RU|UZ|EN)/, async (ctx) => {
   await showBranchSelection(ctx, lang);
 });
 
-bot.action(/branch:(\d+)/, async (ctx) => {
+bot.action(/^branch:(\d+)$/, async (ctx) => {
   const branchId = Number(ctx.match[1]);
   const customer = await prisma.customer.findUnique({
     where: { telegramId: BigInt(ctx.from.id) },
@@ -84,7 +84,7 @@ bot.action(/branch:(\d+)/, async (ctx) => {
   await ctx.reply(t(lang, "menuComingSoon"), Markup.inlineKeyboard(buttons, { columns: 1 }));
 });
 
-bot.action(/bell:(\d+)/, async (ctx) => {
+bot.action(/^bell:(\d+)$/, async (ctx) => {
   const branchId = Number(ctx.match[1]);
   const customer = await prisma.customer.findUnique({
     where: { telegramId: BigInt(ctx.from.id) },
@@ -123,14 +123,14 @@ bot.on("text", async (ctx, next) => {
     await bot.telegram.sendMessage(
       staffChatId,
       `🔔 Вызов официанта\nФилиал: ${branch.nameRu}\nСтолик: ${tableNumber}\nГость: ${who}`,
-      Markup.inlineKeyboard([Markup.button.callback("✅ Принять", `ack:${tableCall.id}`)])
+      Markup.inlineKeyboard([Markup.button.callback("✅ Принять", `tableack:${tableCall.id}`)])
     );
   } else {
     console.warn("TELEGRAM_ORDERS_CHAT_ID not set, table call not forwarded to staff");
   }
 });
 
-bot.action(/ack:(\d+)/, async (ctx) => {
+bot.action(/^tableack:(\d+)$/, async (ctx) => {
   const tableCallId = Number(ctx.match[1]);
   const tableCall = await prisma.tableCall.findUnique({
     where: { id: tableCallId },
@@ -159,7 +159,7 @@ bot.action(/ack:(\d+)/, async (ctx) => {
   );
 });
 
-bot.action(/orderack:(\d+)/, async (ctx) => {
+bot.action(/^orderack:(\d+)$/, async (ctx) => {
   const orderId = Number(ctx.match[1]);
   const order = await prisma.order.findUnique({
     where: { id: orderId },
