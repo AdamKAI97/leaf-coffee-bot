@@ -180,6 +180,7 @@ model Order {
   deliveryAddress String?
   deliveryLatitude  Float?
   deliveryLongitude Float?
+  comment         String?
   scheduledFor    DateTime?     // null = "as soon as possible"
   totalPrice      Int
   language        Language

@@ -189,6 +189,15 @@ h1, h2, h3 {
 .cart-payment-note { font-size: 12px; color: var(--ink-soft); font-style: italic; margin: 14px 0 0; }
 .cart-error { font-size: 12px; color: var(--accent-700); margin: 8px 0 0; }
 
+/* ---------- Order status badge ---------- */
+.order-status-badge {
+  align-self: flex-start; font-family: 'Cormorant SC', serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+  background: var(--accent-100); color: var(--accent-700); border: 1px solid var(--accent-300);
+}
+.order-status-CANCELLED { background: transparent; color: var(--ink-faint); border-color: var(--line); text-decoration: line-through; }
+.order-status-SENT, .order-status-READY { background: var(--accent-700); color: var(--paper); border-color: var(--accent-700); }
+
 /* ---------- Bottom sheet ---------- */
 .scrim { position: fixed; inset: 0; background: var(--sheet-scrim); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 20; }
 .scrim.open { opacity: 1; pointer-events: auto; }

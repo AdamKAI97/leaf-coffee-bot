@@ -1,7 +1,8 @@
 import { Telegraf, Markup } from "telegraf";
-import { Language } from "@prisma/client";
+import { Language, OrderStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { t } from "./i18n/texts";
+import { buildOrderMessageText, buildOrderKeyboard, nextOrderStatus, statusLineRu } from "./orderMessage";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -159,27 +160,67 @@ bot.action(/^tableack:(\d+)$/, async (ctx) => {
   );
 });
 
-bot.action(/^orderack:(\d+)$/, async (ctx) => {
-  const orderId = Number(ctx.match[1]);
-  const order = await prisma.order.findUnique({
+async function loadOrderForMessage(orderId: number) {
+  return prisma.order.findUnique({
     where: { id: orderId },
-    include: { customer: true },
+    include: {
+      customer: true,
+      branch: true,
+      items: { include: { menuItem: true, variants: { include: { variantOption: true } } } },
+    },
   });
+}
 
+bot.action(/^orderstatus:(\d+):(\w+)$/, async (ctx) => {
+  const orderId = Number(ctx.match[1]);
+  const targetStatus = ctx.match[2] as OrderStatus;
+  const order = await loadOrderForMessage(orderId);
   if (!order) return ctx.answerCbQuery();
-  if (order.status !== "CREATED") {
-    return ctx.answerCbQuery("Уже принято", { show_alert: false });
+
+  const expectedNext = nextOrderStatus(order.status, order.type);
+  if (order.status === "CANCELLED" || expectedNext !== targetStatus) {
+    return ctx.answerCbQuery("Уже обновлено", { show_alert: false });
   }
 
-  await prisma.order.update({ where: { id: orderId }, data: { status: "ACCEPTED" } });
-  await prisma.orderStatusLog.create({ data: { orderId, status: "ACCEPTED" } });
+  await prisma.order.update({ where: { id: orderId }, data: { status: targetStatus } });
+  await prisma.orderStatusLog.create({ data: { orderId, status: targetStatus } });
+  order.status = targetStatus;
 
   const staffName = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
-  await ctx.answerCbQuery("Принято");
-  await ctx.editMessageText(`${(ctx.callbackQuery.message as any).text}\n\n✅ Принято: ${staffName}`);
+  await ctx.answerCbQuery(statusLineRu(targetStatus, order.type));
+  await ctx.editMessageText(
+    `${buildOrderMessageText(order, order.branch, staffName)}\n(обновил: ${staffName})`,
+    buildOrderKeyboard(order.id, order.status, order.type)
+  );
+
+  const statusKey =
+    targetStatus === "READY"
+      ? `orderStatus_READY_${order.type}`
+      : `orderStatus_${targetStatus}`;
+  await bot.telegram.sendMessage(
+    order.customer.telegramId.toString(),
+    t(order.customer.language, statusKey, { id: String(order.id) })
+  );
+});
+
+bot.action(/^ordercancel:(\d+)$/, async (ctx) => {
+  const orderId = Number(ctx.match[1]);
+  const order = await loadOrderForMessage(orderId);
+  if (!order) return ctx.answerCbQuery();
+  if (order.status === "CANCELLED" || order.status === "SENT" || (order.status === "READY" && order.type === "PICKUP")) {
+    return ctx.answerCbQuery("Нельзя отменить", { show_alert: false });
+  }
+
+  await prisma.order.update({ where: { id: orderId }, data: { status: "CANCELLED" } });
+  await prisma.orderStatusLog.create({ data: { orderId, status: "CANCELLED" } });
+  order.status = "CANCELLED";
+
+  const staffName = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+  await ctx.answerCbQuery("Отменено");
+  await ctx.editMessageText(`${buildOrderMessageText(order, order.branch, staffName)}\n(отменил: ${staffName})`);
 
   await bot.telegram.sendMessage(
     order.customer.telegramId.toString(),
-    t(order.customer.language, "orderAccepted", { id: String(order.id) })
+    t(order.customer.language, "orderCancelled", { id: String(order.id) })
   );
 });

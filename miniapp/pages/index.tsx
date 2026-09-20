@@ -60,6 +60,23 @@ type Branch = {
   addressEn: string;
 };
 
+type OrderStatus = "CREATED" | "ACCEPTED" | "PREPARING" | "READY" | "SENT" | "CANCELLED";
+
+type PastOrder = {
+  id: number;
+  type: "PICKUP" | "DELIVERY";
+  status: OrderStatus;
+  totalPrice: number;
+  createdAt: string;
+  branch: Branch;
+  items: {
+    quantity: number;
+    unitPrice: number;
+    menuItem: { nameRu: string; nameUz: string; nameEn: string };
+    variants: { variantOption: { nameRu: string; nameUz: string; nameEn: string } }[];
+  }[];
+};
+
 type CartLine = {
   id: string;
   item: MenuItem;
@@ -100,6 +117,17 @@ const UI: Record<Lang, Record<string, string>> = {
     placingOrder: "Оформляем...",
     paymentNote: "Оплата: наличными при получении",
     pickOnMap: "📍 Указать на карте",
+    myOrders: "Мои заказы",
+    noOrders: "Заказов пока нет",
+    orderComment: "Комментарий к заказу (по желанию)",
+    orderCommentPlaceholder: "Например: без сахара, позвонить у подъезда",
+    status_CREATED: "Оформлен",
+    status_ACCEPTED: "Принят",
+    status_PREPARING: "Готовится",
+    status_READY_PICKUP: "Готов к выдаче",
+    status_READY_DELIVERY: "Готов, ожидает отправки",
+    status_SENT: "В пути",
+    status_CANCELLED: "Отменён",
   },
   uz: {
     demoBanner: "Demo menyu. Haqiqiy taomlar admin panel orqali qo'shiladi.",
@@ -132,6 +160,17 @@ const UI: Record<Lang, Record<string, string>> = {
     placingOrder: "Rasmiylashtirilmoqda...",
     paymentNote: "To'lov: yetkazib berishda naqd pul bilan",
     pickOnMap: "📍 Xaritada belgilash",
+    myOrders: "Buyurtmalarim",
+    noOrders: "Hozircha buyurtmalar yo'q",
+    orderComment: "Buyurtmaga izoh (ixtiyoriy)",
+    orderCommentPlaceholder: "Masalan: shakarsiz, kirish oldida qo'ng'iroq qiling",
+    status_CREATED: "Rasmiylashtirildi",
+    status_ACCEPTED: "Qabul qilindi",
+    status_PREPARING: "Tayyorlanmoqda",
+    status_READY_PICKUP: "Olib ketishga tayyor",
+    status_READY_DELIVERY: "Tayyor, jo'natilishi kutilmoqda",
+    status_SENT: "Yo'lda",
+    status_CANCELLED: "Bekor qilindi",
   },
   en: {
     demoBanner: "Sample menu. Real items will be added via the admin panel.",
@@ -164,6 +203,17 @@ const UI: Record<Lang, Record<string, string>> = {
     placingOrder: "Placing order...",
     paymentNote: "Payment: cash on delivery",
     pickOnMap: "📍 Pick on map",
+    myOrders: "My orders",
+    noOrders: "No orders yet",
+    orderComment: "Order comment (optional)",
+    orderCommentPlaceholder: "e.g. no sugar, call at the gate",
+    status_CREATED: "Placed",
+    status_ACCEPTED: "Accepted",
+    status_PREPARING: "Preparing",
+    status_READY_PICKUP: "Ready for pickup",
+    status_READY_DELIVERY: "Ready, awaiting courier",
+    status_SENT: "On the way",
+    status_CANCELLED: "Cancelled",
   },
 };
 
@@ -185,6 +235,11 @@ function fmt(n: number, lang: Lang) {
   if (lang === "uz") return `${num} so'm`;
   if (lang === "en") return `${num} UZS`;
   return `${num} сум`;
+}
+
+function orderStatusLabel(status: OrderStatus, orderType: "PICKUP" | "DELIVERY", t: (key: string) => string) {
+  if (status === "READY") return t(orderType === "DELIVERY" ? "status_READY_DELIVERY" : "status_READY_PICKUP");
+  return t(`status_${status}`);
 }
 
 function branchShortName(branch: Branch, lang: Lang) {
@@ -269,6 +324,10 @@ export default function Home() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [orderComment, setOrderComment] = useState("");
+  const [myOrdersOpen, setMyOrdersOpen] = useState(false);
+  const [pastOrders, setPastOrders] = useState<PastOrder[]>([]);
+  const [pastOrdersLoading, setPastOrdersLoading] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [lastOrderId, setLastOrderId] = useState<number | null>(null);
   const [checkoutError, setCheckoutError] = useState("");
@@ -397,6 +456,7 @@ export default function Home() {
           deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : undefined,
           deliveryLatitude: orderType === "delivery" ? deliveryCoords?.lat : undefined,
           deliveryLongitude: orderType === "delivery" ? deliveryCoords?.lng : undefined,
+          comment: orderComment.trim() || undefined,
           telegramId: user?.id,
           telegramUsername: user?.username,
           telegramFirstName: user?.first_name,
@@ -415,8 +475,24 @@ export default function Home() {
       setCart([]);
       setDeliveryAddress("");
       setDeliveryCoords(null);
+      setOrderComment("");
     } catch {
       setCheckoutStatus("error");
+    }
+  }
+
+  async function loadPastOrders() {
+    const user = telegramUser();
+    if (!user?.id) return;
+    setPastOrdersLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/orders?telegramId=${user.id}`);
+      const data = await res.json();
+      setPastOrders(data);
+    } catch {
+      setPastOrders([]);
+    } finally {
+      setPastOrdersLoading(false);
     }
   }
 
@@ -434,6 +510,9 @@ export default function Home() {
           </button>
         </div>
         <div className="header-actions">
+          <button className="bell-btn" onClick={() => { setMyOrdersOpen(true); loadPastOrders(); }} aria-label={t("myOrders")}>
+            <span>📋</span>
+          </button>
           <button className="bell-btn" onClick={() => { setBellOpen(true); setBellStatus("idle"); setTableNumber(""); }} aria-label={t("callWaiter")}>
             <span>🔔</span>
           </button>
@@ -546,6 +625,43 @@ export default function Home() {
         )}
       </div>
 
+      {/* My orders sheet */}
+      <div className={`scrim ${myOrdersOpen ? "open" : ""}`} onClick={() => setMyOrdersOpen(false)} />
+      <div className={`sheet ${myOrdersOpen ? "open" : ""}`}>
+        {myOrdersOpen && (
+          <>
+            <div className="sheet-handle" />
+            <div className="sheet-title" style={{ marginBottom: 14 }}>{t("myOrders")}</div>
+            {pastOrdersLoading ? (
+              <p style={{ color: "var(--ink-soft)" }}>{t("loading")}</p>
+            ) : pastOrders.length === 0 ? (
+              <p style={{ color: "var(--ink-soft)" }}>{t("noOrders")}</p>
+            ) : (
+              <div className="cart-lines">
+                {pastOrders.map((order) => (
+                  <div className="cart-line" key={order.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div className="cart-line-name">#{order.id} · {branchShortName(order.branch, lang)}</div>
+                      <div className="cart-line-price tabular">{fmt(order.totalPrice, lang)}</div>
+                    </div>
+                    <div className="cart-line-variants">
+                      {order.items.map((oi, idx) => (
+                        <div key={idx}>
+                          {oi.quantity}× {oi.menuItem[`name${lang === "ru" ? "Ru" : lang === "uz" ? "Uz" : "En"}`]}
+                        </div>
+                      ))}
+                    </div>
+                    <span className={`order-status-badge order-status-${order.status}`}>
+                      {orderStatusLabel(order.status, order.type, t)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Map picker sheet */}
       <div className={`scrim ${mapOpen ? "open" : ""}`} onClick={() => setMapOpen(false)} />
       <div className={`sheet ${mapOpen ? "open" : ""}`}>
@@ -609,6 +725,14 @@ export default function Home() {
                 )}
                 {cart.length > 0 && (
                   <>
+                    <div className="variant-label" style={{ marginTop: 16 }}>{t("orderComment")}</div>
+                    <textarea
+                      className="table-input"
+                      style={{ resize: "vertical", minHeight: 60 }}
+                      value={orderComment}
+                      onChange={(e) => setOrderComment(e.target.value)}
+                      placeholder={t("orderCommentPlaceholder")}
+                    />
                     <p className="cart-payment-note">{t("paymentNote")}</p>
                     {checkoutError && <p className="cart-error">{checkoutError}</p>}
                     {checkoutStatus === "error" && <p className="cart-error">{t("orderError")}</p>}

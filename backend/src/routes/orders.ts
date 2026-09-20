@@ -1,18 +1,34 @@
 import { Router } from "express";
-import { Markup } from "telegraf";
 import { prisma } from "../prisma";
+import { buildOrderMessageText, buildOrderKeyboard } from "../orderMessage";
 
 export const ordersRouter = Router();
+
+ordersRouter.get("/", async (req, res) => {
+  const telegramId = req.query.telegramId;
+  if (!telegramId) return res.status(400).json({ error: "telegramId is required" });
+
+  const customer = await prisma.customer.findUnique({ where: { telegramId: BigInt(String(telegramId)) } });
+  if (!customer) return res.json([]);
+
+  const orders = await prisma.order.findMany({
+    where: { customerId: customer.id },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: {
+      branch: true,
+      items: { include: { menuItem: true, variants: { include: { variantOption: true } } } },
+    },
+  });
+
+  res.json(orders);
+});
 
 type IncomingItem = {
   menuItemId: number;
   qty: number;
   variantOptionIds: number[];
 };
-
-function branchNameRu(branch: { nameRu: string }) {
-  return branch.nameRu;
-}
 
 ordersRouter.post("/", async (req, res) => {
   const {
@@ -21,6 +37,7 @@ ordersRouter.post("/", async (req, res) => {
     deliveryAddress,
     deliveryLatitude,
     deliveryLongitude,
+    comment,
     telegramId,
     telegramUsername,
     telegramFirstName,
@@ -32,6 +49,7 @@ ordersRouter.post("/", async (req, res) => {
     deliveryAddress?: string;
     deliveryLatitude?: number;
     deliveryLongitude?: number;
+    comment?: string;
     telegramId: number;
     telegramUsername?: string;
     telegramFirstName?: string;
@@ -98,6 +116,7 @@ ordersRouter.post("/", async (req, res) => {
       deliveryAddress: orderType === "DELIVERY" ? deliveryAddress?.trim() : null,
       deliveryLatitude: orderType === "DELIVERY" ? deliveryLatitude ?? null : null,
       deliveryLongitude: orderType === "DELIVERY" ? deliveryLongitude ?? null : null,
+      comment: comment?.trim() || null,
       totalPrice: total,
       language,
       items: { create: orderItemsData },
@@ -110,23 +129,11 @@ ordersRouter.post("/", async (req, res) => {
   if (staffChatId && process.env.TELEGRAM_BOT_TOKEN) {
     const { bot } = await import("../bot");
     const who = telegramUsername ? `@${telegramUsername}` : telegramFirstName || "Гость";
-    const lines = order.items
-      .map((oi) => {
-        const variants = oi.variants.map((v) => v.variantOption.nameRu).join(", ");
-        return `• ${oi.menuItem.nameRu}${variants ? ` (${variants})` : ""} x${oi.quantity} — ${oi.unitPrice * oi.quantity} сум`;
-      })
-      .join("\n");
-    const mapLink =
-      deliveryLatitude && deliveryLongitude
-        ? `\nКарта: https://maps.google.com/?q=${deliveryLatitude},${deliveryLongitude}`
-        : "";
-    const typeText =
-      orderType === "PICKUP" ? "Самовывоз" : `Доставка: ${order.deliveryAddress}${mapLink}`;
 
     await bot.telegram.sendMessage(
       staffChatId,
-      `🧾 Новый заказ #${order.id}\nФилиал: ${branchNameRu(branch)}\n${typeText}\nГость: ${who}\n\n${lines}\n\nИтого: ${total} сум\nОплата: наличными при получении`,
-      Markup.inlineKeyboard([Markup.button.callback("✅ Принять заказ", `orderack:${order.id}`)])
+      buildOrderMessageText(order, branch, who),
+      buildOrderKeyboard(order.id, order.status, order.type)
     );
   }
 
