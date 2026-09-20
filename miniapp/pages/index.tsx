@@ -446,7 +446,10 @@ export default function Home() {
         {cartCount > 0 && (
           <div className="cartbar-inner">
             <button className="cartbar-summary" onClick={() => setCartOpen(true)}>
-              <span className="cartbar-count">{cartCount} {lang === "ru" ? "товар(а)" : lang === "uz" ? "ta mahsulot" : "items"}</span>
+              <span className="cartbar-count">
+                <span className="cartbar-count-number tabular">{cartCount}</span>{" "}
+                {lang === "ru" ? "товар(а)" : lang === "uz" ? "ta mahsulot" : "items"}
+              </span>
               <span className="cartbar-total tabular">{fmt(cartTotal, lang)}</span>
             </button>
             <button className="cartbar-btn" onClick={() => alert(t("checkoutSoon"))}>{t("checkout")}</button>
