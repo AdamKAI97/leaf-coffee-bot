@@ -147,6 +147,12 @@ function fmt(n: number, lang: Lang) {
   return `${num} сум`;
 }
 
+function branchShortName(branch: Branch, lang: Lang) {
+  const full = localized(branch, lang);
+  const dashIndex = full.indexOf("—");
+  return dashIndex === -1 ? full : full.slice(dashIndex + 1).trim();
+}
+
 function IconCupHot() {
   return (
     <svg viewBox="0 0 64 64" fill="none">
@@ -194,6 +200,7 @@ export default function Home() {
   const [tableNumber, setTableNumber] = useState("");
   const [bellStatus, setBellStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [loading, setLoading] = useState(true);
+  const [showLangList, setShowLangList] = useState(false);
 
   useEffect(() => {
     // @ts-ignore
@@ -291,33 +298,34 @@ export default function Home() {
     <>
       <div className="topbar">
         <div className="logo-mark">
-          <svg viewBox="0 0 100 100" fill="none">
-            <path d="M50 14 C68 30 76 46 76 60 C76 76 64 86 50 86 C36 86 24 76 24 60 C24 46 32 30 50 14Z" fill="var(--accent-400)" stroke="var(--ink)" strokeWidth="4" strokeLinejoin="round" />
-            <path d="M50 40 L50 82 M50 82 C58 82 64 76 66 68" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" fill="none" />
-            <line x1="50" y1="52" x2="42" y2="52" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
-            <line x1="50" y1="62" x2="42" y2="62" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
-            <line x1="50" y1="72" x2="42" y2="72" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Leaf Coffee" />
         </div>
         <div className="brand-block">
           <div className="brand-name">Leaf Coffee</div>
           <button className="branch-pill" onClick={() => setShowBranchList((s) => !s)}>
-            {branch ? localized(branch, lang) : t("chooseBranch")}
+            {branch ? branchShortName(branch, lang) : t("chooseBranch")}
           </button>
         </div>
         <div className="header-actions">
           <button className="bell-btn" onClick={() => { setBellOpen(true); setBellStatus("idle"); setTableNumber(""); }} aria-label={t("callWaiter")}>
-            🔔
+            <span>🔔</span>
           </button>
-          <div className="lang-switch" role="group">
-            {(["ru", "uz", "en"] as Lang[]).map((l) => (
-              <button key={l} data-active={lang === l} onClick={() => setLang(l)}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <button className="lang-current" onClick={() => setShowLangList((s) => !s)}>
+            {lang.toUpperCase()}
+          </button>
         </div>
       </div>
+
+      {showLangList && (
+        <div className="lang-dropdown" role="group">
+          {(["ru", "uz", "en"] as Lang[]).map((l) => (
+            <button key={l} data-active={lang === l} onClick={() => { setLang(l); setShowLangList(false); }}>
+              {l === "ru" ? "Русский" : l === "uz" ? "O'zbekcha" : "English"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showBranchList && (
         <div className="branch-list">
