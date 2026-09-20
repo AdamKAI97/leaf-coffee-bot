@@ -18,6 +18,11 @@ enum OrderType {
   DELIVERY
 }
 
+enum TableCallStatus {
+  PENDING
+  ACKNOWLEDGED
+}
+
 enum PaymentMethod {
   PAYME
   CLICK
@@ -74,6 +79,7 @@ model Branch {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   orders       Order[]
+  tableCalls   TableCall[]
 }
 
 model Customer {
@@ -85,6 +91,18 @@ model Customer {
   createdAt           DateTime             @default(now())
   orders              Order[]
   loyaltyTransactions LoyaltyTransaction[]
+  tableCalls          TableCall[]
+}
+
+model TableCall {
+  id          Int              @id @default(autoincrement())
+  branchId    Int
+  branch      Branch           @relation(fields: [branchId], references: [id])
+  customerId  Int
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  tableNumber String
+  status      TableCallStatus  @default(PENDING)
+  createdAt   DateTime         @default(now())
 }
 
 model MenuCategory {

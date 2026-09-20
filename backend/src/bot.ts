@@ -10,6 +10,11 @@ if (!token) {
 
 export const bot = new Telegraf(token);
 
+// In-memory only: which branch a customer last picked, and whether we're
+// waiting on them to type a table number after tapping the bell button.
+const selectedBranch = new Map<number, number>();
+const pendingTableCall = new Map<number, number>();
+
 function branchName(branch: { nameRu: string; nameUz: string; nameEn: string }, lang: Language) {
   if (lang === "RU") return branch.nameRu;
   if (lang === "UZ") return branch.nameUz;
@@ -64,7 +69,57 @@ bot.action(/branch:(\d+)/, async (ctx) => {
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) return ctx.answerCbQuery();
 
+  selectedBranch.set(ctx.from.id, branchId);
+
   await ctx.answerCbQuery();
   await ctx.reply(t(lang, "branchSelected", { branch: branchName(branch, lang) }));
-  await ctx.reply(t(lang, "menuComingSoon"));
+  await ctx.reply(
+    t(lang, "menuComingSoon"),
+    Markup.inlineKeyboard([Markup.button.callback(t(lang, "callWaiter"), `bell:${branchId}`)])
+  );
+});
+
+bot.action(/bell:(\d+)/, async (ctx) => {
+  const branchId = Number(ctx.match[1]);
+  const customer = await prisma.customer.findUnique({
+    where: { telegramId: BigInt(ctx.from.id) },
+  });
+  const lang = customer?.language ?? "RU";
+
+  pendingTableCall.set(ctx.from.id, branchId);
+  await ctx.answerCbQuery();
+  await ctx.reply(t(lang, "askTableNumber"));
+});
+
+bot.on("text", async (ctx) => {
+  const branchId = pendingTableCall.get(ctx.from.id);
+  if (branchId === undefined) return;
+  pendingTableCall.delete(ctx.from.id);
+
+  const tableNumber = ctx.message.text.trim().slice(0, 20);
+  const customer = await getOrCreateCustomer(ctx.from.id);
+  const lang = customer.language;
+  const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+  if (!branch || !tableNumber) return;
+
+  await prisma.tableCall.create({
+    data: { branchId, customerId: customer.id, tableNumber },
+  });
+
+  await ctx.reply(t(lang, "tableCallConfirmed", { table: tableNumber }));
+
+  const staffChatId = process.env.TELEGRAM_ORDERS_CHAT_ID;
+  if (staffChatId) {
+    const who = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+    await bot.telegram.sendMessage(
+      staffChatId,
+      `🔔 Вызов официанта\nФилиал: ${branch.nameRu}\nСтолик: ${tableNumber}\nГость: ${who}`
+    );
+  } else {
+    console.warn("TELEGRAM_ORDERS_CHAT_ID not set, table call not forwarded to staff");
+  }
+});
+
+bot.command("chatid", async (ctx) => {
+  await ctx.reply(`Chat ID: ${ctx.chat.id}`);
 });
