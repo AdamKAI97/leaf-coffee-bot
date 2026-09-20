@@ -87,6 +87,12 @@ const UI: Record<Lang, Record<string, string>> = {
     yourOrder: "Ваш заказ",
     remove: "✕ Удалить",
     cartEmpty: "Корзина пуста",
+    deliveryAddressPlaceholder: "Укажите адрес доставки",
+    deliveryAddressRequired: "Укажите адрес доставки, чтобы оформить заказ",
+    orderPlaced: "Заказ #{id} оформлен! Оплата — наличными при получении. Ожидайте подтверждения.",
+    orderError: "Не получилось оформить заказ, попробуйте ещё раз",
+    placingOrder: "Оформляем...",
+    paymentNote: "Оплата: наличными при получении",
   },
   uz: {
     demoBanner: "Demo menyu. Haqiqiy taomlar admin panel orqali qo'shiladi.",
@@ -112,6 +118,12 @@ const UI: Record<Lang, Record<string, string>> = {
     yourOrder: "Sizning buyurtmangiz",
     remove: "✕ O'chirish",
     cartEmpty: "Savat bo'sh",
+    deliveryAddressPlaceholder: "Yetkazish manzilini kiriting",
+    deliveryAddressRequired: "Buyurtma berish uchun yetkazish manzilini kiriting",
+    orderPlaced: "#{id}-buyurtma qabul qilindi! To'lov — yetkazib berishda naqd pul bilan. Tasdiqlashni kuting.",
+    orderError: "Buyurtma berilmadi, qayta urinib ko'ring",
+    placingOrder: "Rasmiylashtirilmoqda...",
+    paymentNote: "To'lov: yetkazib berishda naqd pul bilan",
   },
   en: {
     demoBanner: "Sample menu. Real items will be added via the admin panel.",
@@ -137,6 +149,12 @@ const UI: Record<Lang, Record<string, string>> = {
     yourOrder: "Your order",
     remove: "✕ Remove",
     cartEmpty: "Cart is empty",
+    deliveryAddressPlaceholder: "Enter your delivery address",
+    deliveryAddressRequired: "Enter a delivery address to place the order",
+    orderPlaced: "Order #{id} placed! Payment — cash on delivery. Wait for confirmation.",
+    orderError: "Couldn't place the order, please try again",
+    placingOrder: "Placing order...",
+    paymentNote: "Payment: cash on delivery",
   },
 };
 
@@ -239,6 +257,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLangList, setShowLangList] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [lastOrderId, setLastOrderId] = useState<number | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
     // @ts-ignore
@@ -345,6 +367,44 @@ export default function Home() {
     }
   }
 
+  async function placeOrder() {
+    if (cart.length === 0 || !branchId) return;
+    if (orderType === "delivery" && !deliveryAddress.trim()) {
+      setCheckoutError(t("deliveryAddressRequired"));
+      return;
+    }
+    const user = telegramUser();
+    setCheckoutError("");
+    setCheckoutStatus("sending");
+    try {
+      const res = await fetch(`${API_BASE}/api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branchId,
+          orderType: orderType.toUpperCase(),
+          deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          telegramId: user?.id,
+          telegramUsername: user?.username,
+          telegramFirstName: user?.first_name,
+          language: lang.toUpperCase(),
+          items: cart.map((line) => ({
+            menuItemId: line.item.id,
+            qty: line.qty,
+            variantOptionIds: Object.values(line.variants),
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error("failed");
+      const data = await res.json();
+      setLastOrderId(data.orderId);
+      setCheckoutStatus("success");
+      setCart([]);
+    } catch {
+      setCheckoutStatus("error");
+    }
+  }
+
   return (
     <>
       <div className="topbar">
@@ -400,7 +460,17 @@ export default function Home() {
         <button data-active={orderType === "pickup"} onClick={() => setOrderType("pickup")}>{t("pickup")}</button>
         <button data-active={orderType === "delivery"} onClick={() => setOrderType("delivery")}>{t("delivery")}</button>
       </div>
-      <div className="order-hint">{orderType === "pickup" ? t("pickupHint") : t("deliveryHint")}</div>
+      {orderType === "pickup" ? (
+        <div className="order-hint">{t("pickupHint")}</div>
+      ) : (
+        <input
+          className="table-input"
+          style={{ marginBottom: 14 }}
+          value={deliveryAddress}
+          onChange={(e) => setDeliveryAddress(e.target.value)}
+          placeholder={t("deliveryAddressPlaceholder")}
+        />
+      )}
 
       {loading ? (
         <div className="empty-state">{t("loading")}</div>
@@ -445,14 +515,14 @@ export default function Home() {
       <div className="cartbar">
         {cartCount > 0 && (
           <div className="cartbar-inner">
-            <button className="cartbar-summary" onClick={() => setCartOpen(true)}>
+            <button className="cartbar-summary" onClick={() => { setCheckoutStatus("idle"); setCheckoutError(""); setCartOpen(true); }}>
               <span className="cartbar-count">
                 <span className="cartbar-count-number tabular">{cartCount}</span>{" "}
                 {lang === "ru" ? "товар(а)" : lang === "uz" ? "ta mahsulot" : "items"}
               </span>
               <span className="cartbar-total tabular">{fmt(cartTotal, lang)}</span>
             </button>
-            <button className="cartbar-btn" onClick={() => alert(t("checkoutSoon"))}>{t("checkout")}</button>
+            <button className="cartbar-btn" onClick={() => { setCheckoutStatus("idle"); setCheckoutError(""); setCartOpen(true); }}>{t("checkout")}</button>
           </div>
         )}
       </div>
@@ -463,40 +533,54 @@ export default function Home() {
         {cartOpen && (
           <>
             <div className="sheet-handle" />
-            <div className="sheet-title" style={{ marginBottom: 14 }}>{t("yourOrder")}</div>
-            {cart.length === 0 ? (
-              <p style={{ color: "var(--ink-soft)" }}>{t("cartEmpty")}</p>
+            {checkoutStatus === "success" ? (
+              <>
+                <div className="sheet-title" style={{ marginBottom: 10 }}>{t("yourOrder")}</div>
+                <p>{t("orderPlaced").replace("{id}", String(lastOrderId))}</p>
+              </>
             ) : (
-              <div className="cart-lines">
-                {cart.map((line) => {
-                  const variantText = cartLineVariantSummary(line, lang);
-                  return (
-                    <div className="cart-line" key={line.id}>
-                      <div className="cart-line-info">
-                        <div className="cart-line-name">{localized(line.item, lang)}</div>
-                        {variantText && <div className="cart-line-variants">{variantText}</div>}
-                        <button className="cart-line-remove" onClick={() => removeCartLine(line.id)}>{t("remove")}</button>
-                      </div>
-                      <div className="cart-line-right">
-                        <div className="stepper">
-                          <button onClick={() => setCartLineQty(line.id, line.qty - 1)}>−</button>
-                          <span>{line.qty}</span>
-                          <button onClick={() => setCartLineQty(line.id, line.qty + 1)}>+</button>
+              <>
+                <div className="sheet-title" style={{ marginBottom: 14 }}>{t("yourOrder")}</div>
+                {cart.length === 0 ? (
+                  <p style={{ color: "var(--ink-soft)" }}>{t("cartEmpty")}</p>
+                ) : (
+                  <div className="cart-lines">
+                    {cart.map((line) => {
+                      const variantText = cartLineVariantSummary(line, lang);
+                      return (
+                        <div className="cart-line" key={line.id}>
+                          <div className="cart-line-info">
+                            <div className="cart-line-name">{localized(line.item, lang)}</div>
+                            {variantText && <div className="cart-line-variants">{variantText}</div>}
+                            <button className="cart-line-remove" onClick={() => removeCartLine(line.id)}>{t("remove")}</button>
+                          </div>
+                          <div className="cart-line-right">
+                            <div className="stepper">
+                              <button onClick={() => setCartLineQty(line.id, line.qty - 1)}>−</button>
+                              <span>{line.qty}</span>
+                              <button onClick={() => setCartLineQty(line.id, line.qty + 1)}>+</button>
+                            </div>
+                            <div className="cart-line-price tabular">{fmt(line.qty * line.unit, lang)}</div>
+                          </div>
                         </div>
-                        <div className="cart-line-price tabular">{fmt(line.qty * line.unit, lang)}</div>
-                      </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {cart.length > 0 && (
+                  <>
+                    <p className="cart-payment-note">{t("paymentNote")}</p>
+                    {checkoutError && <p className="cart-error">{checkoutError}</p>}
+                    {checkoutStatus === "error" && <p className="cart-error">{t("orderError")}</p>}
+                    <div className="sheet-footer">
+                      <button className="add-btn" style={{ width: "100%" }} onClick={placeOrder} disabled={checkoutStatus === "sending"}>
+                        <span>{checkoutStatus === "sending" ? t("placingOrder") : t("checkout")}</span>
+                        <span className="tabular">{fmt(cartTotal, lang)}</span>
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-            {cart.length > 0 && (
-              <div className="sheet-footer">
-                <button className="add-btn" style={{ width: "100%" }} onClick={() => { setCartOpen(false); alert(t("checkoutSoon")); }}>
-                  <span>{t("checkout")}</span>
-                  <span className="tabular">{fmt(cartTotal, lang)}</span>
-                </button>
-              </div>
+                  </>
+                )}
+              </>
             )}
           </>
         )}

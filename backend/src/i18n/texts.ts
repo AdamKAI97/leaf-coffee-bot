@@ -12,6 +12,7 @@ export const texts: Record<Language, Record<string, string>> = {
     askTableNumber: "Введите номер столика:",
     tableCallConfirmed: "Официант уже идёт к вам (столик {table}) ☕",
     tableCallAcknowledged: "✅ Официант принял ваш вызов и уже идёт к столику {table}",
+    orderAccepted: "✅ Ваш заказ #{id} принят и готовится",
   },
   UZ: {
     chooseLanguage: "Tilni tanlang:",
@@ -24,6 +25,7 @@ export const texts: Record<Language, Record<string, string>> = {
     askTableNumber: "Stol raqamini kiriting:",
     tableCallConfirmed: "Ofitsiant sizga kelmoqda (stol {table}) ☕",
     tableCallAcknowledged: "✅ Ofitsiant chaqiruvingizni qabul qildi va stol {table} tomon kelmoqda",
+    orderAccepted: "✅ #{id}-buyurtmangiz qabul qilindi va tayyorlanmoqda",
   },
   EN: {
     chooseLanguage: "Choose your language:",
@@ -36,6 +38,7 @@ export const texts: Record<Language, Record<string, string>> = {
     askTableNumber: "Enter your table number:",
     tableCallConfirmed: "A waiter is on the way to table {table} ☕",
     tableCallAcknowledged: "✅ A waiter has acknowledged your call and is on the way to table {table}",
+    orderAccepted: "✅ Your order #{id} has been accepted and is being prepared",
   },
 };
 

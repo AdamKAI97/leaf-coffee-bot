@@ -158,3 +158,28 @@ bot.action(/ack:(\d+)/, async (ctx) => {
     t(tableCall.customer.language, "tableCallAcknowledged", { table: tableCall.tableNumber })
   );
 });
+
+bot.action(/orderack:(\d+)/, async (ctx) => {
+  const orderId = Number(ctx.match[1]);
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { customer: true },
+  });
+
+  if (!order) return ctx.answerCbQuery();
+  if (order.status !== "CREATED") {
+    return ctx.answerCbQuery("Уже принято", { show_alert: false });
+  }
+
+  await prisma.order.update({ where: { id: orderId }, data: { status: "ACCEPTED" } });
+  await prisma.orderStatusLog.create({ data: { orderId, status: "ACCEPTED" } });
+
+  const staffName = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+  await ctx.answerCbQuery("Принято");
+  await ctx.editMessageText(`${(ctx.callbackQuery.message as any).text}\n\n✅ Принято: ${staffName}`);
+
+  await bot.telegram.sendMessage(
+    order.customer.telegramId.toString(),
+    t(order.customer.language, "orderAccepted", { id: String(order.id) })
+  );
+});
