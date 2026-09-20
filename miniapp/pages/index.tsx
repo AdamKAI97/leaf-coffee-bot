@@ -55,6 +55,7 @@ type Branch = {
 };
 
 type CartLine = {
+  id: string;
   item: MenuItem;
   variants: Record<string, number>; // groupKey -> variantOptionId
   qty: number;
@@ -83,6 +84,9 @@ const UI: Record<Lang, Record<string, string>> = {
     loading: "Загрузка...",
     empty: "В этой категории пока нет позиций",
     checkoutSoon: "Оформление заказа — следующий этап разработки.",
+    yourOrder: "Ваш заказ",
+    remove: "✕ Удалить",
+    cartEmpty: "Корзина пуста",
   },
   uz: {
     demoBanner: "Demo menyu. Haqiqiy taomlar admin panel orqali qo'shiladi.",
@@ -105,6 +109,9 @@ const UI: Record<Lang, Record<string, string>> = {
     loading: "Yuklanmoqda...",
     empty: "Bu toifada hozircha mahsulot yo'q",
     checkoutSoon: "Buyurtma rasmiylashtirish — keyingi bosqich.",
+    yourOrder: "Sizning buyurtmangiz",
+    remove: "✕ O'chirish",
+    cartEmpty: "Savat bo'sh",
   },
   en: {
     demoBanner: "Sample menu. Real items will be added via the admin panel.",
@@ -127,6 +134,9 @@ const UI: Record<Lang, Record<string, string>> = {
     loading: "Loading...",
     empty: "No items in this category yet",
     checkoutSoon: "Checkout — coming in the next development stage.",
+    yourOrder: "Your order",
+    remove: "✕ Remove",
+    cartEmpty: "Cart is empty",
   },
 };
 
@@ -160,6 +170,17 @@ function itemDescription(item: MenuItem, lang: Lang) {
   if (lang === "ru") return item.descriptionRu;
   if (lang === "uz") return item.descriptionUz;
   return item.descriptionEn;
+}
+
+function cartLineVariantSummary(line: CartLine, lang: Lang) {
+  return line.item.variantGroups
+    .map(({ variantGroup }) => {
+      const optId = line.variants[variantGroup.key];
+      const opt = variantGroup.options.find((o) => o.id === optId);
+      return opt ? localized(opt, lang) : null;
+    })
+    .filter(Boolean)
+    .join(", ");
 }
 
 function IconCupHot() {
@@ -217,6 +238,7 @@ export default function Home() {
   const [bellStatus, setBellStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [loading, setLoading] = useState(true);
   const [showLangList, setShowLangList] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     // @ts-ignore
@@ -280,8 +302,21 @@ export default function Home() {
 
   function addToCart() {
     if (!sheetItem) return;
-    setCart((prev) => [...prev, { item: sheetItem, variants: sheetVariants, qty: sheetQty, unit: unitPrice }]);
+    const id = `${sheetItem.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setCart((prev) => [...prev, { id, item: sheetItem, variants: sheetVariants, qty: sheetQty, unit: unitPrice }]);
     setSheetItem(null);
+  }
+
+  function removeCartLine(id: string) {
+    setCart((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function setCartLineQty(id: string, qty: number) {
+    if (qty < 1) {
+      removeCartLine(id);
+      return;
+    }
+    setCart((prev) => prev.map((c) => (c.id === id ? { ...c, qty } : c)));
   }
 
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
@@ -410,12 +445,57 @@ export default function Home() {
       <div className="cartbar">
         {cartCount > 0 && (
           <div className="cartbar-inner">
-            <div>
-              <div className="cartbar-count">{cartCount} {lang === "ru" ? "товар(а)" : lang === "uz" ? "ta mahsulot" : "items"}</div>
-              <div className="cartbar-total tabular">{fmt(cartTotal, lang)}</div>
-            </div>
+            <button className="cartbar-summary" onClick={() => setCartOpen(true)}>
+              <span className="cartbar-count">{cartCount} {lang === "ru" ? "товар(а)" : lang === "uz" ? "ta mahsulot" : "items"}</span>
+              <span className="cartbar-total tabular">{fmt(cartTotal, lang)}</span>
+            </button>
             <button className="cartbar-btn" onClick={() => alert(t("checkoutSoon"))}>{t("checkout")}</button>
           </div>
+        )}
+      </div>
+
+      {/* Cart list sheet */}
+      <div className={`scrim ${cartOpen ? "open" : ""}`} onClick={() => setCartOpen(false)} />
+      <div className={`sheet ${cartOpen ? "open" : ""}`}>
+        {cartOpen && (
+          <>
+            <div className="sheet-handle" />
+            <div className="sheet-title" style={{ marginBottom: 14 }}>{t("yourOrder")}</div>
+            {cart.length === 0 ? (
+              <p style={{ color: "var(--ink-soft)" }}>{t("cartEmpty")}</p>
+            ) : (
+              <div className="cart-lines">
+                {cart.map((line) => {
+                  const variantText = cartLineVariantSummary(line, lang);
+                  return (
+                    <div className="cart-line" key={line.id}>
+                      <div className="cart-line-info">
+                        <div className="cart-line-name">{localized(line.item, lang)}</div>
+                        {variantText && <div className="cart-line-variants">{variantText}</div>}
+                        <button className="cart-line-remove" onClick={() => removeCartLine(line.id)}>{t("remove")}</button>
+                      </div>
+                      <div className="cart-line-right">
+                        <div className="stepper">
+                          <button onClick={() => setCartLineQty(line.id, line.qty - 1)}>−</button>
+                          <span>{line.qty}</span>
+                          <button onClick={() => setCartLineQty(line.id, line.qty + 1)}>+</button>
+                        </div>
+                        <div className="cart-line-price tabular">{fmt(line.qty * line.unit, lang)}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {cart.length > 0 && (
+              <div className="sheet-footer">
+                <button className="add-btn" style={{ width: "100%" }} onClick={() => { setCartOpen(false); alert(t("checkoutSoon")); }}>
+                  <span>{t("checkout")}</span>
+                  <span className="tabular">{fmt(cartTotal, lang)}</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
