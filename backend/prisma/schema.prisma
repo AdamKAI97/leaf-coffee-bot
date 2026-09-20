@@ -110,6 +110,7 @@ model MenuCategory {
   nameRu    String
   nameUz    String
   nameEn    String
+  icon      String     @default("cupHot")
   sortOrder Int        @default(0)
   isActive  Boolean    @default(true)
   items     MenuItem[]

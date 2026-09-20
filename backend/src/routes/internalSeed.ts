@@ -82,10 +82,10 @@ const branches = [
 ];
 
 const categories = [
-  { key: "coffee", ru: "Кофе", uz: "Qahva", en: "Coffee", sortOrder: 1 },
-  { key: "cold", ru: "Холодные напитки", uz: "Sovuq ichimliklar", en: "Cold drinks", sortOrder: 2 },
-  { key: "tea", ru: "Чай", uz: "Choy", en: "Tea", sortOrder: 3 },
-  { key: "dessert", ru: "Десерты", uz: "Desertlar", en: "Desserts", sortOrder: 4 },
+  { key: "coffee", ru: "Кофе", uz: "Qahva", en: "Coffee", sortOrder: 1, icon: "cupHot" },
+  { key: "cold", ru: "Холодные напитки", uz: "Sovuq ichimliklar", en: "Cold drinks", sortOrder: 2, icon: "cupCold" },
+  { key: "tea", ru: "Чай", uz: "Choy", en: "Tea", sortOrder: 3, icon: "cupHot" },
+  { key: "dessert", ru: "Десерты", uz: "Desertlar", en: "Desserts", sortOrder: 4, icon: "cake" },
 ];
 
 const items = [
@@ -152,10 +152,10 @@ async function runSeed(req: any, res: any) {
     const record = existing
       ? await prisma.menuCategory.update({
           where: { id: existing.id },
-          data: { nameRu: cat.ru, nameUz: cat.uz, nameEn: cat.en, sortOrder: cat.sortOrder },
+          data: { nameRu: cat.ru, nameUz: cat.uz, nameEn: cat.en, sortOrder: cat.sortOrder, icon: cat.icon },
         })
       : await prisma.menuCategory.create({
-          data: { nameRu: cat.ru, nameUz: cat.uz, nameEn: cat.en, sortOrder: cat.sortOrder },
+          data: { nameRu: cat.ru, nameUz: cat.uz, nameEn: cat.en, sortOrder: cat.sortOrder, icon: cat.icon },
         });
     categoryIds[cat.key] = record.id;
   }
