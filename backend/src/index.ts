@@ -1,9 +1,12 @@
 import express from "express";
+import cors from "cors";
 import { branchesRouter } from "./routes/branches";
 import { menuRouter } from "./routes/menu";
 import { internalSeedRouter } from "./routes/internalSeed";
+import { tableCallsRouter } from "./routes/tableCalls";
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
@@ -12,6 +15,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/branches", branchesRouter);
 app.use("/api/menu", menuRouter);
+app.use("/api/table-calls", tableCallsRouter);
 app.use("/internal/seed", internalSeedRouter);
 
 const port = process.env.PORT ?? 3000;

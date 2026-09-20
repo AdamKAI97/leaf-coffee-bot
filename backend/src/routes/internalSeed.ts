@@ -81,6 +81,28 @@ const branches = [
   },
 ];
 
+const categories = [
+  { key: "coffee", ru: "Кофе", uz: "Qahva", en: "Coffee", sortOrder: 1 },
+  { key: "cold", ru: "Холодные напитки", uz: "Sovuq ichimliklar", en: "Cold drinks", sortOrder: 2 },
+  { key: "tea", ru: "Чай", uz: "Choy", en: "Tea", sortOrder: 3 },
+  { key: "dessert", ru: "Десерты", uz: "Desertlar", en: "Desserts", sortOrder: 4 },
+];
+
+const items = [
+  { cat: "coffee", ru: "Капучино", uz: "Kapuchino", en: "Cappuccino", price: 25000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
+  { cat: "coffee", ru: "Латте", uz: "Latte", en: "Latte", price: 27000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
+  { cat: "coffee", ru: "Американо", uz: "Amerikano", en: "Americano", price: 20000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
+  { cat: "coffee", ru: "Раф", uz: "Raf", en: "Raf", price: 32000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
+  { cat: "coffee", ru: "Флэт Уайт", uz: "Flet Vayt", en: "Flat White", price: 28000, variants: ["SIZE", "TEMPERATURE", "DECAF", "SUGAR"] },
+  { cat: "coffee", ru: "Эспрессо", uz: "Espresso", en: "Espresso", price: 16000, variants: ["SIZE", "DECAF"] },
+  { cat: "cold", ru: "Айс Латте", uz: "Ays Latte", en: "Iced Latte", price: 29000, variants: ["SIZE", "DECAF", "SUGAR"] },
+  { cat: "cold", ru: "Лимонад Leaf", uz: "Leaf Limonadi", en: "Leaf Lemonade", price: 24000, variants: ["SIZE", "SUGAR"] },
+  { cat: "tea", ru: "Чёрный чай", uz: "Qora choy", en: "Black Tea", price: 15000, variants: ["SIZE", "TEMPERATURE", "SUGAR"] },
+  { cat: "tea", ru: "Зелёный чай", uz: "Yashil choy", en: "Green Tea", price: 15000, variants: ["SIZE", "TEMPERATURE", "SUGAR"] },
+  { cat: "dessert", ru: "Круассан", uz: "Kruassan", en: "Croissant", price: 18000, variants: [] },
+  { cat: "dessert", ru: "Чизкейк", uz: "Chizkeyk", en: "Cheesecake", price: 32000, variants: [] },
+];
+
 async function runSeed(req: any, res: any) {
   if (req.query.key !== process.env.SEED_SECRET) {
     return res.status(403).json({ error: "forbidden" });
@@ -97,6 +119,8 @@ async function runSeed(req: any, res: any) {
     }
   }
 
+  const variantGroupIds: Record<string, number> = {};
+
   for (const group of variantGroups) {
     const created = await prisma.variantGroup.upsert({
       where: { key: group.key },
@@ -108,6 +132,7 @@ async function runSeed(req: any, res: any) {
         nameEn: group.nameEn,
       },
     });
+    variantGroupIds[group.key] = created.id;
 
     for (const option of group.options) {
       const existing = await prisma.variantOption.findFirst({
@@ -117,6 +142,52 @@ async function runSeed(req: any, res: any) {
         await prisma.variantOption.update({ where: { id: existing.id }, data: option });
       } else {
         await prisma.variantOption.create({ data: { ...option, variantGroupId: created.id } });
+      }
+    }
+  }
+
+  const categoryIds: Record<string, number> = {};
+  for (const cat of categories) {
+    const existing = await prisma.menuCategory.findFirst({ where: { nameEn: cat.en } });
+    const record = existing
+      ? await prisma.menuCategory.update({
+          where: { id: existing.id },
+          data: { nameRu: cat.ru, nameUz: cat.uz, nameEn: cat.en, sortOrder: cat.sortOrder },
+        })
+      : await prisma.menuCategory.create({
+          data: { nameRu: cat.ru, nameUz: cat.uz, nameEn: cat.en, sortOrder: cat.sortOrder },
+        });
+    categoryIds[cat.key] = record.id;
+  }
+
+  for (const item of items) {
+    const existing = await prisma.menuItem.findFirst({
+      where: { nameEn: item.en, categoryId: categoryIds[item.cat] },
+    });
+    const menuItem = existing
+      ? await prisma.menuItem.update({
+          where: { id: existing.id },
+          data: { nameRu: item.ru, nameUz: item.uz, nameEn: item.en, basePrice: item.price },
+        })
+      : await prisma.menuItem.create({
+          data: {
+            categoryId: categoryIds[item.cat],
+            nameRu: item.ru,
+            nameUz: item.uz,
+            nameEn: item.en,
+            basePrice: item.price,
+          },
+        });
+
+    for (const variantKey of item.variants) {
+      const groupId = variantGroupIds[variantKey];
+      const existingLink = await prisma.menuItemVariantGroup.findUnique({
+        where: { menuItemId_variantGroupId: { menuItemId: menuItem.id, variantGroupId: groupId } },
+      });
+      if (!existingLink) {
+        await prisma.menuItemVariantGroup.create({
+          data: { menuItemId: menuItem.id, variantGroupId: groupId },
+        });
       }
     }
   }

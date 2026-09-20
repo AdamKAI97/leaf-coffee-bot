@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
+    "cors": "^2.8.6",
     "express": "^4.21.0",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/node": "^22.7.0",
     "prisma": "^5.20.0",
